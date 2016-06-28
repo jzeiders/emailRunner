@@ -13,12 +13,14 @@ var createHash = function(word) {
     return crypto.createHash('md5').update(word).digest("hex");
   },
   pickDomain = function() {
+    console.log("Picking Domain");
     var url = "http://api.temp-mail.ru/request/domains/format/json";
     var domain = q.defer();
     request(url, function(error, response, body) {
       if (error) {
         domain.reject(error);
       }
+      body = JSON.parse(body)
       domain.resolve(body[Math.floor(Math.random() * 2)]);
     });
     return domain.promise;
@@ -26,26 +28,31 @@ var createHash = function(word) {
 
 
   generateEmail = function(username) {
+    console.log("Generating Email");
     var email = q.defer();
     pickDomain().then(function(result) {
       email.resolve(username.concat(result));
-    }).catch(errpr, function(error) {
+    }).catch(function(error) {
       email.reject(error);
     });
     return email.promise;
   },
   generateUsername = function() {
-    return username = random.first().concat(random.middle())
+    console.log("Generating Username");
+    var username = random.first().concat(random.middle())
       .concat(random.last()).concat(Math.floor(Math.random() * 9999));
+      return username;
   },
   generateDob = function() {
-    var year = Math.floor(Math.random * 40 + 1950),
-      month = Math.floor(Math.random * 11 + 1),
-      day = Math.floor(Math.random * 27);
+    console.log("Generating DOB");
+    var year = Math.floor(Math.random * 40 + 1950).toString(),
+      month = Math.floor(Math.random * 11 + 1).toString(),
+      day = Math.floor(Math.random * 27).toString();
     return year.concat('-').concat(day).concat('-').concat(month);
   },
   generatePost = function(username, email) {
-    account = {
+    console.log("Generating Post")
+    post = {
       username: username,
       password: createHash('THIS$^#TISMOTHERF&CK&#GDOPE'),
       gender: ['M', 'F'][Math.floor(Math.random())],
@@ -60,20 +67,22 @@ var createHash = function(word) {
   },
 
   generateAccount = function() {
+    console.log("Generating Account");
     var account = q.defer(),
       name = generateUsername();
-    generateEmail().then(function(email) {
-      account.resolve(function() {
-        generatePost(name, email);
-      });
-    }).catch(function(error) {
-      account.reject(error);
+    generateEmail(name).then(function(email) {
+      console.log("Email :", email);
+      var post = generatePost(name, email);
+      account.resolve(post);
+      }).catch(function(error) {
+      account.reject(error, "Account Error");
     });
     return account.promise;
   },
 
 
   submitAccount = function() {
+    console.log("Submitting Account");
     var submit = q.defer();
     generateAccount().then(function(post) {
       var options = {
@@ -97,7 +106,8 @@ var createHash = function(word) {
   },
 
   requestEmailContents = function(hash) {
-    var urlBase = "http://api.temp-mail.ru/request/mail/id/";
+    console.log("Requesting Email Contents")
+    var urlBase = "http://api.temp-mail.ru/request/mail/id/",
     url = urlBase.concat(hash).concat("/format/json");
     var emailContents = q.defer();
     request(url, function(error, response, body) {
@@ -109,6 +119,7 @@ var createHash = function(word) {
     return emailContents.promise;
   },
   clickLink = function(url) {
+    console.log("Clicking Link");
     var validate = q.defer();
     request(url, function(error, response, body) {
       if (error) {
@@ -120,6 +131,7 @@ var createHash = function(word) {
 
   },
   parseEmail = function(email) {
+    console.log("Parsing Email");
     var $ = cheerio.load(email);
     $('href').each(function(i, element) {
       return element.val();
@@ -127,6 +139,7 @@ var createHash = function(word) {
 
   },
   validateAccount = function(email) {
+    console.log("Validating Email");
     var validate = q.defer();
     requestEmailContents(createHash(email)).then(function(data) {
       clickLink(parseEmail(data)).then(function(result) {
@@ -138,6 +151,7 @@ var createHash = function(word) {
     return validate.promise;
   },
   create2ndAccount = function() {
+    console.log("Creating 2nd Acccount");
     var account2 = q.defer();
     var options = {
       method: 'POST',
@@ -158,6 +172,7 @@ var createHash = function(word) {
     return account2.promise;
   },
   submitVote = function() {
+    console.log("Submitting Vote")
     var vote = q.defer();
     var options = {
       method: 'POST',
@@ -181,7 +196,7 @@ var createHash = function(word) {
   },
   main = function() {
     console.log("We going for it");
-    submitAccount.then(function(email) {
+    submitAccount().then(function(email) {
       validateAccount(email).then(function() {
         create2ndAccount().then(function(){
           submitVote().then(function(){
@@ -190,15 +205,16 @@ var createHash = function(word) {
         });
       });
     }).catch(function(error) {
-      console.log(error + 'WHY NO PERFECT');
+      console.log(error + ' WHY NO PERFECT');
     });
   };
 
-main();
+
 app.get('/', function(req, res) {
   res.send('Hello World');
 });
 
 var server = app.listen(8081, function() {
   console.log("Server Listening");
+  main();
 });
