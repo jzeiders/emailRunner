@@ -20,7 +20,7 @@ var createHash = function(word) {
       if (error) {
         domain.reject(error);
       }
-      body = JSON.parse(body)
+      body = JSON.parse(body);
       domain.resolve(body[Math.floor(Math.random() * 2)]);
     });
     return domain.promise;
@@ -31,7 +31,7 @@ var createHash = function(word) {
     console.log("Generating Email");
     var email = q.defer();
     pickDomain().then(function(result) {
-      email.resolve(username.concat(result));
+      email.resolve(username.concat(result).toLowerCase());
     }).catch(function(error) {
       email.reject(error);
     });
@@ -39,29 +39,30 @@ var createHash = function(word) {
   },
   generateUsername = function() {
     console.log("Generating Username");
-    var username = random.first().concat(random.middle())
-      .concat(random.last()).concat(Math.floor(Math.random() * 9999));
+    var username ="";
+    while(username.length > 14 || username.length < 4)
+      username = random.first().concat(random.last()).concat(Math.floor(Math.random() * 9999));
       return username;
   },
   generateDob = function() {
     console.log("Generating DOB");
-    var year = Math.floor(Math.random * 40 + 1950).toString(),
-      month = Math.floor(Math.random * 11 + 1).toString(),
-      day = Math.floor(Math.random * 27).toString();
-    return year.concat('-').concat(day).concat('-').concat(month);
+    var year = (Math.floor(Math.random() * 40 + 1950)),
+      month = (Math.floor(Math.random() * 11 + 1)),
+      day = (Math.floor(Math.random() * 27));
+    return year+'-'+month+'-'+day;
   },
   generatePost = function(username, email) {
-    console.log("Generating Post")
+    console.log("Generating Post");
     post = {
       username: username,
-      password: createHash('THIS$^#TISMOTHERF&CK&#GDOPE'),
+      password: '2c8aa2b741b0208dfdf5a69993afdf6fcc8231df59c6658056dee4bbb1a81b00',
       gender: ['M', 'F'][Math.floor(Math.random())],
       dateOfBirth: generateDob(),
       email: email,
       experience: "LegoCom",
       countryCode: "US",
       tosVersion: "enusXX01",
-      returnURL: "https://ideas.lego.com/projects/132444"
+      returnUrl: "https://ideas.lego.com/projects/132444"
     };
     return post;
   },
@@ -85,28 +86,31 @@ var createHash = function(word) {
     console.log("Submitting Account");
     var submit = q.defer();
     generateAccount().then(function(post) {
+      console.log(post)
       var options = {
         method: 'POST',
         url: 'https://account2.lego.com/account/en-us/account/',
         headers: {
-          'content-type': 'multipart/form-data; boundary=---011000010111000001101001'
+          'content-type': 'multipart/form-data'
         },
         formData: post
       };
+
       request(options, function(error, res, body) {
-        if (error || !(body.success)) {
-          submit.reject(error);
+        if (error || !(JSON.parse(body).Success)) {
+          console.log(body);
+          submit.reject(error + "Submite Error");
         }
         submit.resolve(post.email);
       });
     }).catch(function(error) {
-      submit.reject(error);
+      submit.reject(error + "Submitter Error");
     });
     return submit.promise;
   },
 
   requestEmailContents = function(hash) {
-    console.log("Requesting Email Contents")
+    console.log("Requesting Email Contents");
     var urlBase = "http://api.temp-mail.ru/request/mail/id/",
     url = urlBase.concat(hash).concat("/format/json");
     var emailContents = q.defer();
@@ -119,7 +123,8 @@ var createHash = function(word) {
     return emailContents.promise;
   },
   clickLink = function(url) {
-    console.log("Clicking Link");
+
+    console.log("Clicking Link: " + url);
     var validate = q.defer();
     request(url, function(error, response, body) {
       if (error) {
@@ -133,7 +138,9 @@ var createHash = function(word) {
   parseEmail = function(email) {
     console.log("Parsing Email");
     var $ = cheerio.load(email);
+    console.log(email)
     $('href').each(function(i, element) {
+      console.log(element)
       return element.val();
     });
 
@@ -172,7 +179,7 @@ var createHash = function(word) {
     return account2.promise;
   },
   submitVote = function() {
-    console.log("Submitting Vote")
+    console.log("Submitting Vote");
     var vote = q.defer();
     var options = {
       method: 'POST',
